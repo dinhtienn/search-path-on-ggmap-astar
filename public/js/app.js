@@ -1,6 +1,8 @@
 let map, start, end, route;
 let choosePoint = "start";
 let markers = [];
+const geofenceColor = "#FF0000";
+const pathColor = "#1e25eb";
 
 function initMap() {
   map = new google.maps.Map(document.getElementById("map"), {
@@ -11,19 +13,16 @@ function initMap() {
   // Construct the geofence
   const geofence = new google.maps.Polygon({
     paths: listNodeGeofence,
-    strokeColor: "#FF0000",
+    strokeColor: geofenceColor,
     strokeOpacity: 0.8,
     strokeWeight: 2,
-    fillColor: "#FF0000",
+    fillColor: geofenceColor,
     fillOpacity: 0.25,
   });
   geofence.setMap(map);
 
   // Click geofence
   geofence.addListener("click", (geofenceMouseClick) => {
-    // console.log(geofenceMouseClick.latLng.toJSON());
-    // listNode.push(geofenceMouseClick.latLng.toJSON());
-    // console.log(listNode);
     if (choosePoint === "start") {
       if (route) route.setMap(null);
       if (start) removeMarker("start");
@@ -41,7 +40,7 @@ function initMap() {
   });
 
   // Create marker
-  function createMarker(position, label) {
+  function createMarker(position, label = "") {
     const marker = new google.maps.Marker({
       position: position,
       map,
@@ -67,7 +66,7 @@ function initMap() {
     route = new google.maps.Polyline({
       path: path,
       geodesic: true,
-      strokeColor: "#1e25eb",
+      strokeColor: pathColor,
       strokeOpacity: 1.0,
       strokeWeight: 2,
     });

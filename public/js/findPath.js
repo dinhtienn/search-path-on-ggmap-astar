@@ -5,7 +5,9 @@ const listNodeDetected = listNode.map((item) => {
 });
 
 listNodeDetected.forEach((item, index) => graph.addNode(`${index + 1}`, item));
-listLink.forEach((item) => graph.addLink(item[0], item[1]));
+for (const [key, value] of Object.entries(listLink)) {
+  value.forEach(item => graph.addLink(`${key}`, `${item}`));
+}
 
 function findPath(start, end) {
   startDetected = detectPosition(start);
