@@ -1,6 +1,7 @@
 let map, start, end, route;
 let choosePoint = "start";
 let markers = [];
+let allNodeMarkers = [];
 const geofenceColor = "#FF0000";
 const pathColor = "#1e25eb";
 
@@ -9,6 +10,10 @@ function initMap() {
     center: centerNode,
     zoom: 17,
   });
+
+  const geocoder = new google.maps.Geocoder();
+  const infowindowStart = new google.maps.InfoWindow();
+  const infowindowEnd = new google.maps.InfoWindow();
 
   // Construct the geofence
   const geofence = new google.maps.Polygon({
@@ -23,42 +28,59 @@ function initMap() {
 
   // Click geofence
   geofence.addListener("click", (geofenceMouseClick) => {
+    if (allNodeMarkers.length !== 0) {
+      siiimpleToast.alert("Bạn phải ẩn tất cả các node để tìm đường", {duration: 3000});
+      return;
+    }
     if (choosePoint === "start") {
-      if (route) route.setMap(null);
-      if (start) removeMarker("start");
+      if (route) {
+        removePath();
+        clearPathMarker();
+      }
       start = geofenceMouseClick.latLng.toJSON();
       createMarker(start, "S");
       choosePoint = "end";
     } else if (choosePoint === "end") {
-      if (end) removeMarker("end");
       end = geofenceMouseClick.latLng.toJSON();
       createMarker(end, "E");
       choosePoint = "start";
       const path = findPath(start, end);
       drawPath(path);
+      siiimpleToast.success(`Đề xuất đường đi qua ${path.length - 2} Node`, {
+        duration: 4000,
+      });
     }
   });
 
   // Create marker
   function createMarker(position, label = "") {
-    const marker = new google.maps.Marker({
-      position: position,
-      map,
-      label: label,
+    geocoder.geocode({ location: position }, (results, status) => {
+      if (status === "OK") {
+        if (results[0]) {
+          const marker = new google.maps.Marker({
+            position: position,
+            map,
+            label: label,
+          });
+          if (label === "S") {
+            markers[0] = marker;
+            infowindowStart.setContent(results[0].formatted_address);
+            infowindowStart.open(map, marker);
+          } else if (label === "E") {
+            markers[1] = marker;
+            infowindowEnd.setContent(results[0].formatted_address);
+            infowindowEnd.open(map, marker);
+          }
+        }
+      }
     });
-    if (label === "S") markers[0] = marker;
-    else if (label === "E") markers[1] = marker;
   }
 
-  // Remove marker
-  function removeMarker(markerName) {
-    if (markerName === "start") {
-      markers[0].setMap(null);
-      markers[0] = null;
-    } else if (markerName === "end") {
-      markers[1].setMap(null);
-      markers[1] = null;
+  function clearPathMarker() {
+    for (let i = 0; i < markers.length; i++) {
+      markers[i].setMap(null);
     }
+    markers = [];
   }
 
   // Draw path
@@ -74,8 +96,39 @@ function initMap() {
     route.setMap(map);
   }
 
+  // Remove path
+  function removePath() {
+    if (route) route.setMap(null);
+  }
+
   // Click outside
-  map.addListener("click", (mapsMouseEvent) => {
-    alert("Vui lòng chọn trong khu vực phường Thanh Nhàn");
+  map.addListener("click", () => {
+    siiimpleToast.alert("Vui lòng chọn trong khu vực phường Thanh Nhàn");
+  });
+
+  // Show all node
+  document.querySelector("#btn-display").addEventListener("click", () => {
+    removePath();
+    clearPathMarker();
+    choosePoint = "start";
+    if (allNodeMarkers.length === 0) {
+      for (let i = 0; i < listNode.length; i++) {
+        const marker = new google.maps.Marker({
+          position: listNode[i],
+          map,
+          label: `${i + 1}`,
+        });
+        allNodeMarkers.push(marker);
+      }
+      siiimpleToast.message(`Show all ${listNode.length} nodes`, {duration: 4000});
+      document.querySelector("#btn-display").innerHTML = "Hide all nodes";
+    } else {
+      for (let i = 0; i < allNodeMarkers.length; i++) {
+        allNodeMarkers[i].setMap(null);
+      }
+      allNodeMarkers = [];
+      siiimpleToast.message(`Hide all ${listNode.length} nodes`, {duration: 4000});
+      document.querySelector("#btn-display").innerHTML = "Show all nodes";
+    }
   });
 }
